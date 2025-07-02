@@ -1,3 +1,4 @@
+# Ignore virtual environments and Python artifacts
 .venv/
 __pycache__/
 *.pyc
@@ -5,4 +6,6 @@ __pycache__/
 *.pyd
 .env
 .DS_Store
-pdfs/ 
+# Ignore everything in pdfs except PDF files
+pdfs/*
+!pdfs/**/*.pdf 
