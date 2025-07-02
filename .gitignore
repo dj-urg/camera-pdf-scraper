@@ -6,6 +6,6 @@ __pycache__/
 *.pyd
 .env
 .DS_Store
-# Ignore everything in pdfs except PDF files
-pdfs/*
+# Track all PDFs and their subfolders, ignore other files in pdfs/
+!pdfs/
 !pdfs/**/*.pdf 
