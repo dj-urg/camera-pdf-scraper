@@ -1,28 +1,30 @@
 # Camera PDF Scraper
 
-This script (`scrape_camera_pdfs.py`) automates the downloading of all commission meeting PDFs from the Italian Chamber of Deputies (camera.it) for a specified commission and date range.
+This script (`scrape_camera_pdfs.py`) automates the downloading of all commission meeting PDFs from the Italian Chamber of Deputies (camera.it) for a specified commission and date range, with robust classification and parallel download support.
 
 ## What It Does
-- **Fetches** the list of available commission meeting PDFs month-by-month from the camera.it website.
+- **Dynamically discovers available years and months** for each legislature by scraping the official site, so it only downloads periods that actually exist.
+- **Fetches** the list of available commission meeting PDFs for each valid month and year.
 - **Parses** each month's page to find links to downloadable PDF files (specifically those labeled "scarica PDF").
-- **Downloads** each PDF into a structured folder hierarchy by year.
+- **Classifies** each PDF as either a stenographic report (`stenografici`), a bulletin (`bollettini`), or `other` based on the URL and query parameters.
+- **Downloads** each PDF into a structured folder hierarchy: `output/legXX/{stenografici,bollettini,other}/YEAR/`.
 - **Skips** already-downloaded files to avoid duplicates.
-- **Logs** progress and errors, with optional debug output.
+- **Downloads in parallel** (6 at a time) for speed.
+- **Logs** progress and errors, with optional debug output and a separate `errors.log` file for errors only.
 
 ## Usage
 
 ```bash
-python scrape_camera_pdfs.py --start 2020 --end 2025 --out pdfs [--debug]
+python scrape_camera_pdfs.py --out pdfs [--debug] [--legislatures 17,18,19]
 ```
 
-- `--start`: First year to scrape (inclusive). Default: 2020
-- `--end`: Last year to scrape (inclusive). Default: current year
 - `--out`: Output directory for PDFs. Default: `./pdfs`
 - `--debug`: Enable verbose debug logging (optional)
+- `--legislatures`: Comma-separated list of legislatures to scrape (e.g., `17,18,19`). Default: 19
 
 Example:
 ```bash
-python scrape_camera_pdfs.py --start 2022 --end 2023 --out my_pdfs --debug
+python scrape_camera_pdfs.py --out my_pdfs --legislatures 17,18,19 --debug
 ```
 
 ## Requirements
@@ -38,21 +40,21 @@ pip install requests beautifulsoup4 python-slugify tqdm
 ```
 
 ## How It Works
-- The script constructs URLs for each month in the specified range for the configured commission.
-- It fetches the HTML for each month and looks for anchor tags with text containing "scarica PDF".
-- For each found PDF link, it generates a filename based on the date and commission, and saves the file in a year-based subfolder.
-- If a file already exists, it is skipped.
-- All progress and errors are logged to the console.
+- The script scrapes the main page for each legislature to discover which years and months are available.
+- For each valid month, it fetches the HTML and looks for anchor tags with text containing "scarica PDF".
+- Each PDF link is classified as `stenografici`, `bollettini`, or `other` based on the URL and query parameters.
+- Files are saved in a folder structure like: `pdfs/leg18/stenografici/2022/2022-08-02_leg18_vigilanza_radiotelevisiva_xxxxxxxx.pdf`
+- Downloads are performed in parallel (6 at a time) for efficiency.
+- Errors (404s, connection issues, etc.) are logged to `errors.log`.
+- Progress is shown with a `tqdm` progress bar for each month.
 
 ## Customization
-- The commission and legislature are set at the top of the script (`COMMISSION_ID`, `LEGISLATURE`).
+- The commission and default legislatures are set at the top of the script (`COMMISSIONE_ID`, `LEGISLATURES`).
 - If you need a different commission, adjust these values accordingly.
-- The script is currently tailored for the structure of camera.it as of 2023. If the site changes, you may need to update the PDF link extraction logic.
+- The script is tailored for the structure of camera.it as of 2025. If the site changes, you may need to update the PDF link extraction or classification logic.
 
 ## Notes
-- The script is robust to missing months (404s are skipped).
+- The script is robust to missing months (404s are skipped and logged).
 - Only links with the text "scarica PDF" are downloaded. If the site changes this label, you may need to update the script.
 - The script is intended for public, non-commercial use.
-
-## License
-MIT License 
+- Large numbers of parallel downloads may be rate-limited by the server; adjust `max_workers` in the script if needed.
